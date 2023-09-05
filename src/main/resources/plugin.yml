@@ -1,0 +1,13 @@
+name: SpecialWarps
+version: '${version}'
+main: me.notro.specialwarps.SpecialWarps
+api-version: '1.20'
+authors: [Notro]
+description: A GUI based warps plugin for Minecraft servers
+
+commands:
+  setwarp:
+    description: Set a warp.
+
+  warps:
+    description: Open a wars GUI
