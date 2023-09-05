@@ -3,6 +3,7 @@ package me.notro.specialwarps;
 import lombok.Getter;
 import me.notro.specialwarps.commands.SetWarpCommand;
 import me.notro.specialwarps.commands.WarpsCommand;
+import me.notro.specialwarps.listeners.AsyncChatListener;
 import me.notro.specialwarps.managers.GUIManager;
 import me.notro.specialwarps.managers.WarpManager;
 import me.notro.specialwarps.ui.WarpUI;
@@ -40,6 +41,7 @@ public final class SpecialWarps extends JavaPlugin {
 
     private void loadListeners() {
         getServer().getPluginManager().registerEvents(new WarpUI(this), this);
+        getServer().getPluginManager().registerEvents(new AsyncChatListener(this), this);
     }
 
     private void loadManagers() {

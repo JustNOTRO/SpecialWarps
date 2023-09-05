@@ -1,6 +1,7 @@
 package me.notro.specialwarps.managers;
 
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import me.notro.specialwarps.SpecialWarps;
 import me.notro.specialwarps.models.Warp;
 import me.notro.specialwarps.utils.MessageUtils;
@@ -15,16 +16,14 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
+@RequiredArgsConstructor
 public class WarpManager {
 
     private final SpecialWarps plugin;
     private final List<Warp> warps = new ArrayList<>();
-
-    public WarpManager(SpecialWarps plugin) {
-        this.plugin = plugin;
-
-    }
+    private final List<UUID> warpCreators = new ArrayList<>();
 
     public void createWarp(@NonNull Player owner, @NonNull String warpName, @NonNull Location warpLocation) {
         Warp warp = new Warp(owner.getName(), warpName, warpLocation);
@@ -108,6 +107,18 @@ public class WarpManager {
             plugin.getGuiManager().addItem(stack);
             plugin.getGuiManager().openMenu(player);
         }
+    }
+
+    public void addPlayer(@NonNull UUID uuid) {
+        warpCreators.add(uuid);
+    }
+
+    public void removePlayer(@NonNull UUID uuid) {
+        warpCreators.remove(uuid);
+    }
+
+    public boolean containsPlayer(@NonNull UUID uuid) {
+        return warpCreators.contains(uuid);
     }
 
     private boolean isExist(@NonNull Warp warp) {

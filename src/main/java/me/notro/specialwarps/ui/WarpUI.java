@@ -7,6 +7,7 @@ import me.notro.specialwarps.utils.MessageUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.title.Title;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
@@ -102,8 +103,8 @@ public class WarpUI implements Listener {
         meta.displayName(slotName);
         stack.setItemMeta(meta);
 
-        plugin.getGuiManager().createAnvilMenu(player,"Create Warp", NamedTextColor.YELLOW);
-        plugin.getGuiManager().getAnvilMenu().setItem(0, stack);
-        plugin.getGuiManager().openAnvilMenu(player);
+        plugin.getWarpManager().addPlayer(player.getUniqueId());
+        player.closeInventory();
+        player.showTitle(Title.title(Component.text("Type warp name in chat"), Component.text("")));
     }
 }
