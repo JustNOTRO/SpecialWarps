@@ -1,124 +1,175 @@
 package me.notro.specialwarps.managers;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import me.notro.specialwarps.SpecialWarps;
 import me.notro.specialwarps.models.Warp;
-import me.notro.specialwarps.utils.MessageUtils;
+import me.notro.specialwarps.utils.ChatUtils;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
-@RequiredArgsConstructor
+
 public class WarpManager {
 
     private final SpecialWarps plugin;
     private final List<Warp> warps = new ArrayList<>();
-    private final List<UUID> warpCreators = new ArrayList<>();
+    private final List<UUID> warpCreations = new ArrayList<>();
+
+    public WarpManager(@NonNull SpecialWarps plugin) {
+        this.plugin = plugin;
+
+        loadWarps();
+    }
 
     public void createWarp(@NonNull Player owner, @NonNull String warpName, @NonNull Location warpLocation) {
         Warp warp = new Warp(owner.getName(), warpName, warpLocation);
 
         if (isExist(warp)) {
-            MessageUtils.sendPrefixedMessage(owner, "&cWarp already exist&7.");
+            ChatUtils.sendPrefixedMessage(owner, "&cWarp already exist&7.");
             return;
         }
 
         warps.add(warp);
         plugin.getWarpsFile().getConfig().set("special-warps." + warp.getWarpName() + ".owner", warp.getOwnerName());
         plugin.getWarpsFile().getConfig().set("special-warps." + warp.getWarpName() + ".location", warp.getWarpLocation());
+        plugin.getWarpsFile().reloadConfig();
         plugin.getWarpsFile().saveConfig();
 
-        MessageUtils.sendPrefixedMessage(owner, "&aSuccessfully added a new warp named &b" + warp.getWarpName() + "&7.");
+        ChatUtils.sendPrefixedMessage(owner, "&aSuccessfully added a new warp named &b" + warp.getWarpName() + "&7.");
     }
 
     public void removeWarp(@NonNull Player player, @NonNull Warp warp) {
         if (!isExist(warp)) {
-            MessageUtils.sendPrefixedMessage(player, "&cWarp does not exist&7.");
+            ChatUtils.sendPrefixedMessage(player, "&cWarp does not exist&7.");
             return;
         }
 
         warps.remove(warp);
         plugin.getWarpsFile().getConfig().set("special-warps." + warp.getWarpName(), null);
+        plugin.getWarpsFile().reloadConfig();
         plugin.getWarpsFile().saveConfig();
 
-        MessageUtils.sendPrefixedMessage(player,"&aSuccessfully removed warp named &b" + warp.getWarpName() + "&7.");
+        ChatUtils.sendPrefixedMessage(player,"&aSuccessfully removed warp named &b" + warp.getWarpName() + "&7.");
     }
 
     public void chooseRandomWarp(@NonNull Player player) {
         final Random random = new Random();
-        final int numberOfWarps = getWarps();
+        final int numberOfWarps = getWarpsCount();
 
         if (numberOfWarps == 1) {
-            MessageUtils.sendPrefixedMessage(player, "&cThere is not enough warps to teleport randomly&7.");
+            ChatUtils.sendPrefixedMessage(player, "&cThere is not enough warps to teleport randomly&7.");
             return;
         }
 
-        final int randomWarp = random.nextInt(numberOfWarps);
+        final int randomWarpIndex = random.nextInt(numberOfWarps);
 
-        for (int i = 0; i < numberOfWarps; i++) {
-            if (randomWarp == i) {
-                player.teleport(warps.get(i).getWarpLocation());
-                MessageUtils.sendPrefixedMessage(player, "&aSuccessfully teleported randomly to &b" + warps.get(i).getWarpName() + "&7.");
-                return;
+        for (int index = 0; index < numberOfWarps; index++) {
+            if (randomWarpIndex == index) {
+                player.teleport(warps.get(randomWarpIndex).getWarpLocation());
+                ChatUtils.sendPrefixedMessage(player, "&aSuccessfully teleported randomly to &b" + warps.get(randomWarpIndex).getWarpName() + "&7.");
             }
         }
     }
 
-    public int getWarps() {
-        int numberOfWarps = 0;
+    public int getWarpsCount() {
+        return plugin.getWarpsFile().getConfig().getConfigurationSection("special-warps").getKeys(false).size();
+    }
+
+    public void loadWarps() {
+        if (!plugin.getWarpsFile().getConfig().isConfigurationSection("special-warps")) plugin.getWarpsFile().getConfig().createSection("special-warps");
 
         for (String key : plugin.getWarpsFile().getConfig().getConfigurationSection("special-warps").getKeys(false)) {
             ConfigurationSection warpSection = plugin.getWarpsFile().getConfig().getConfigurationSection("special-warps." + key);
             if (warpSection == null) continue;
 
             warps.add(new Warp(warpSection.getString("owner"), key, warpSection.getLocation("location")));
-            numberOfWarps++;
         }
-
-        return numberOfWarps;
     }
 
     public void openWarpsMenu(@NonNull Player player) {
+        @NonNull Inventory warpMenu = plugin.getGuiManager().createMenu(player, 36, Component.text("Warps").color(NamedTextColor.RED));
+
         for (String key : plugin.getWarpsFile().getConfig().getConfigurationSection("special-warps").getKeys(false)) {
             ConfigurationSection warpSection = plugin.getWarpsFile().getConfig().getConfigurationSection("special-warps." + key);
             if (warpSection == null) continue;
 
-            ItemStack stack = new ItemStack(Material.NAME_TAG);
-            ItemMeta meta = stack.getItemMeta();
-            meta.displayName(MessageUtils.fixColor(key));
+            Component[] loreElements =
+                    {
+                            Component.text("Owner: ")
+                                    .color(NamedTextColor.GRAY)
+                                    .append(
+                                            Component.text(warpSection.getString("owner"))
+                                                    .color(NamedTextColor.YELLOW)),
 
-            List<Component> loreList = new ArrayList<>();
-            loreList.add(MessageUtils.fixColor("&7Owner: &e" + warpSection.getString("owner")));
-            loreList.add(MessageUtils.fixColor("&cRight-Click &7to edit"));
-            loreList.add(MessageUtils.fixColor("&cLeft-Click &7to teleport"));
+                            Component.text("Right-Click ")
+                                    .color(NamedTextColor.RED)
+                                    .append(
+                                            Component.text("to edit")
+                                                    .color(NamedTextColor.GRAY)),
 
-            meta.lore(loreList);
-            stack.setItemMeta(meta);
-            plugin.getGuiManager().addItem(stack);
-            plugin.getGuiManager().openMenu(player);
+                            Component.text("Left-Click ")
+                                    .color(NamedTextColor.RED)
+                                    .append(
+                                            Component.text("to teleport")
+                                                    .color(NamedTextColor.GRAY))
+                    };
+
+            plugin.getGuiManager()
+                    .addItem(warpMenu, new ItemStack(Material.NAME_TAG),
+                            Component.text(key), loreElements);
         }
+
+        if (!warpMenu.contains(Material.NAME_TAG)) {
+            ChatUtils.sendPrefixedMessage(player,"&cThere is no warps currently&7.");
+            return;
+        }
+
+        plugin.getGuiManager()
+                .setItem(warpMenu, 35, new ItemStack(Material.END_CRYSTAL),
+                        Component.text("Random Warp")
+                                .color(NamedTextColor.AQUA));
+
+        plugin.getGuiManager()
+                .setItem(warpMenu, 34, new ItemStack(Material.SPONGE),
+                        Component.text("Warps: ")
+                                .color(NamedTextColor.YELLOW)
+                                .append(
+                                        Component.text(getWarpsCount())
+                                                .color(NamedTextColor.GRAY)));
+
+        plugin.getGuiManager()
+                .setItem(warpMenu, 31, new ItemStack(Material.ANVIL),
+                        Component.text("Create Warp")
+                                .color(NamedTextColor.YELLOW));
+
+        plugin.getGuiManager()
+                .setItem(warpMenu, 30, new ItemStack(Material.TRIPWIRE_HOOK),
+                        Component.text("Reload Warps")
+                                .color(NamedTextColor.RED));
+
+        player.openInventory(warpMenu);
     }
 
     public void addPlayer(@NonNull UUID uuid) {
-        warpCreators.add(uuid);
+        warpCreations.add(uuid);
     }
 
     public void removePlayer(@NonNull UUID uuid) {
-        warpCreators.remove(uuid);
+        warpCreations.remove(uuid);
     }
 
     public boolean containsPlayer(@NonNull UUID uuid) {
-        return warpCreators.contains(uuid);
+        return warpCreations.contains(uuid);
     }
 
     private boolean isExist(@NonNull Warp warp) {

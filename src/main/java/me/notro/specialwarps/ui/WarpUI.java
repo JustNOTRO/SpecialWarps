@@ -3,8 +3,9 @@ package me.notro.specialwarps.ui;
 import lombok.RequiredArgsConstructor;
 import me.notro.specialwarps.SpecialWarps;
 import me.notro.specialwarps.models.Warp;
-import me.notro.specialwarps.utils.MessageUtils;
+import me.notro.specialwarps.utils.ChatUtils;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
@@ -15,6 +16,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -28,8 +30,9 @@ public class WarpUI implements Listener {
     public void onPlayerOpenWarps(InventoryClickEvent event) {
         Player player = (Player) event.getWhoClicked();
         ItemStack slot = event.getInventory().getItem(event.getSlot());
+        TextComponent titleName = Component.text("Warps").color(NamedTextColor.RED);
 
-        if (!event.getView().title().equals(Component.text("Warps").color(NamedTextColor.RED))) return;
+        if (!event.getView().title().equals(titleName)) return;
         if (slot == null || slot.getType() != Material.NAME_TAG) return;
 
         slotName = LegacyComponentSerializer.legacyAmpersand().serialize(slot.hasItemMeta() ? slot.getItemMeta().displayName() : slot.displayName());
@@ -38,14 +41,23 @@ public class WarpUI implements Listener {
         switch (event.getAction()) {
             case PICKUP_ALL -> {
                 player.teleport(section.getLocation("location"));
-                MessageUtils.sendPrefixedMessage(player, "&aSuccessfully teleported to &b" + slotName + "&7.");
+                ChatUtils.sendPrefixedMessage(player, "&aSuccessfully teleported to &b" + slotName + "&7.");
             }
 
             case PICKUP_HALF -> {
-                plugin.getGuiManager().createMenu(player, 36, MessageUtils.fixColor("&7Edit: &b" + slotName));
-                plugin.getGuiManager().setItem(0, new ItemStack(Material.RED_CONCRETE), Component.text("Delete").color(NamedTextColor.RED));
-                plugin.getGuiManager().setItem(8, new ItemStack(Material.BARRIER), Component.text("Close").color(NamedTextColor.RED));
-                plugin.getGuiManager().openMenu(player);
+                Inventory editMenu = plugin.getGuiManager().createMenu(player, 36, ChatUtils.fixColor("&7Edit: &b" + slotName));
+
+                plugin.getGuiManager()
+                                .setItem(editMenu, 0, new ItemStack(Material.RED_CONCRETE),
+                                        Component.text("Delete")
+                                                .color(NamedTextColor.RED));
+
+                plugin.getGuiManager()
+                        .setItem(editMenu, 8, new ItemStack(Material.BARRIER),
+                                Component.text("Close")
+                                        .color(NamedTextColor.RED));
+
+                player.openInventory(editMenu);
             }
         }
     }
@@ -54,10 +66,12 @@ public class WarpUI implements Listener {
     public void onPlayerEditWarps(InventoryClickEvent event) {
         Player player = (Player) event.getWhoClicked();
         ItemStack slot = event.getInventory().getItem(event.getSlot());
+        Component titleName = ChatUtils.fixColor("&7Edit: &b" + slotName);
 
-        if (!event.getView().title().equals(MessageUtils.fixColor("&7Edit: &b" + slotName))) return;
+        if (!event.getView().title().equals(titleName)) return;
         if (!event.getAction().equals(InventoryAction.PICKUP_ALL)) return;
         if (slot == null) return;
+
 
         ConfigurationSection section = plugin.getWarpsFile().getConfig().getConfigurationSection("special-warps." + slotName);
         Warp warp = new Warp(player.getName(), slotName, section.getLocation("location"));
@@ -65,10 +79,10 @@ public class WarpUI implements Listener {
         switch (slot.getType()) {
             case RED_CONCRETE -> {
                 plugin.getWarpManager().removeWarp(player, warp);
-                plugin.getGuiManager().closeMenu(player);
+                player.closeInventory();
             }
 
-            case BARRIER -> plugin.getGuiManager().closeMenu(player);
+            case BARRIER -> player.closeInventory();
         }
     }
 
@@ -76,8 +90,9 @@ public class WarpUI implements Listener {
     public void onPlayerTeleportRandomWarp(InventoryClickEvent event) {
         Player player = (Player) event.getWhoClicked();
         ItemStack slot = event.getInventory().getItem(event.getSlot());
+        TextComponent titleName = Component.text("Warps").color(NamedTextColor.RED);
 
-        if (!event.getView().title().equals(Component.text("Warps").color(NamedTextColor.RED))) return;
+        if (!event.getView().title().equals(titleName)) return;
         if (slot == null || slot.getType() != Material.END_CRYSTAL) return;
 
         Component slotName = slot.hasItemMeta() ? slot.getItemMeta().displayName() : slot.displayName();
@@ -91,8 +106,11 @@ public class WarpUI implements Listener {
     public void onPlayerCreateWarp(InventoryClickEvent event) {
         Player player = (Player) event.getWhoClicked();
         ItemStack slot = event.getInventory().getItem(event.getSlot());
+        TextComponent titleName =
+                Component.text("Warps")
+                        .color(NamedTextColor.RED);
 
-        if (!event.getView().title().equals(Component.text("Warps").color(NamedTextColor.RED))) return;
+        if (!event.getView().title().equals(titleName)) return;
         if (slot == null || slot.getType() != Material.ANVIL) return;
 
         Component slotName = slot.hasItemMeta() ? slot.getItemMeta().displayName() : slot.displayName();
@@ -102,6 +120,11 @@ public class WarpUI implements Listener {
         ItemMeta meta = stack.getItemMeta();
         meta.displayName(slotName);
         stack.setItemMeta(meta);
+
+        if (plugin.getWarpManager().containsPlayer(player.getUniqueId())) {
+            ChatUtils.sendPrefixedMessage(player, "&cYou cannot create another warp while creating one already&7.");
+            return;
+        }
 
         plugin.getWarpManager().addPlayer(player.getUniqueId());
         player.closeInventory();

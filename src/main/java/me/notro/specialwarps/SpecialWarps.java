@@ -18,7 +18,7 @@ public final class SpecialWarps extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        this.warpsFile = new ConfigFile(this, "specialwarps");
+        warpsFile = new ConfigFile(this, "specialwarps");
 
         loadCommands();
         loadListeners();
@@ -45,7 +45,7 @@ public final class SpecialWarps extends JavaPlugin {
     }
 
     private void loadManagers() {
-        this.warpManager = new WarpManager(this);
-        this.guiManager = new GUIManager();
+        warpManager = new WarpManager(this);
+        guiManager = new GUIManager();
     }
 }

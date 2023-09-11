@@ -6,7 +6,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.CommandSender;
 
-public class MessageUtils {
+public class ChatUtils {
 
     public static final Component
             NO_SENDER_EXECUTOR = fixColor("&cOnly players can execute this command&7."),

@@ -1,13 +1,13 @@
 package me.notro.specialwarps.commands;
 
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import me.notro.specialwarps.SpecialWarps;
-import me.notro.specialwarps.utils.MessageUtils;
+import me.notro.specialwarps.utils.ChatUtils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
 
 @RequiredArgsConstructor
 public class SetWarpCommand implements CommandExecutor {
@@ -15,19 +15,19 @@ public class SetWarpCommand implements CommandExecutor {
     private final SpecialWarps plugin;
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, @NonNull String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(MessageUtils.getPrefix().append(MessageUtils.NO_SENDER_EXECUTOR));
+            ChatUtils.sendComponentMessage(sender, ChatUtils.NO_SENDER_EXECUTOR);
             return false;
         }
 
         if (!player.hasPermission("specialwarps.setwarp")) {
-            player.sendMessage(MessageUtils.getPrefix().append(MessageUtils.NO_PERMISSION));
+            ChatUtils.sendComponentMessage(player, ChatUtils.NO_PERMISSION);
             return false;
         }
 
         if (args.length < 1) {
-            player.sendMessage(MessageUtils.getPrefix().append(MessageUtils.fixColor("&c/" + label + " <name>")));
+            ChatUtils.sendPrefixedMessage(sender, "&c/" + label + " <name>");
             return false;
         }
 
