@@ -42,7 +42,6 @@ public class WarpManager {
         warps.add(warp);
         plugin.getWarpsFile().getConfig().set("special-warps." + warp.getWarpName() + ".owner", warp.getOwnerName());
         plugin.getWarpsFile().getConfig().set("special-warps." + warp.getWarpName() + ".location", warp.getWarpLocation());
-        plugin.getWarpsFile().reloadConfig();
         plugin.getWarpsFile().saveConfig();
 
         ChatUtils.sendPrefixedMessage(owner, "&aSuccessfully added a new warp named &b" + warp.getWarpName() + "&7.");
@@ -56,7 +55,6 @@ public class WarpManager {
 
         warps.remove(warp);
         plugin.getWarpsFile().getConfig().set("special-warps." + warp.getWarpName(), null);
-        plugin.getWarpsFile().reloadConfig();
         plugin.getWarpsFile().saveConfig();
 
         ChatUtils.sendPrefixedMessage(player,"&aSuccessfully removed warp named &b" + warp.getWarpName() + "&7.");
@@ -72,20 +70,17 @@ public class WarpManager {
         }
 
         final int randomWarpIndex = random.nextInt(numberOfWarps);
+        final Warp randomWarp = warps.get(randomWarpIndex);
 
-        for (int index = 0; index < numberOfWarps; index++) {
-            if (randomWarpIndex == index) {
-                player.teleport(warps.get(randomWarpIndex).getWarpLocation());
-                ChatUtils.sendPrefixedMessage(player, "&aSuccessfully teleported randomly to &b" + warps.get(randomWarpIndex).getWarpName() + "&7.");
-            }
-        }
+        player.teleport(randomWarp.getWarpLocation());
+        ChatUtils.sendPrefixedMessage(player, "&aSuccessfully teleported randomly to &b" + randomWarp.getWarpName() + "&7.");
     }
 
     public int getWarpsCount() {
-        return plugin.getWarpsFile().getConfig().getConfigurationSection("special-warps").getKeys(false).size();
+        return warps.size();
     }
 
-    public void loadWarps() {
+    private void loadWarps() {
         if (!plugin.getWarpsFile().getConfig().isConfigurationSection("special-warps")) plugin.getWarpsFile().getConfig().createSection("special-warps");
 
         for (String key : plugin.getWarpsFile().getConfig().getConfigurationSection("special-warps").getKeys(false)) {
