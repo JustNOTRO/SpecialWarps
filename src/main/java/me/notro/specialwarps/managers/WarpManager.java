@@ -91,7 +91,24 @@ public class WarpManager {
         }
     }
 
+    public void clearWarps() {
+        if (!plugin.getWarpsFile().getConfig().isConfigurationSection("special-warps")) return;
+
+        for (String key : plugin.getWarpsFile().getConfig().getConfigurationSection("special-warps").getKeys(false)) {
+            final Warp warp = getWarpName(key);
+            warps.remove(warp);
+
+            plugin.getWarpsFile().getConfig().set("special-warps." + warp.getWarpName(), null);
+            plugin.getWarpsFile().saveConfig();
+        }
+    }
+
     public void openWarpsMenu(@NonNull Player player) {
+        if (!plugin.getWarpsFile().getConfig().isConfigurationSection("special-warps")) {
+            ChatUtils.sendPrefixedMessage(player,"&cThere is no warps currently&7.");
+            return;
+        }
+
         @NonNull Inventory warpMenu = plugin.getGuiManager().createMenu(player, 36, Component.text("Warps").color(NamedTextColor.RED));
 
         for (String key : plugin.getWarpsFile().getConfig().getConfigurationSection("special-warps").getKeys(false)) {
@@ -152,6 +169,11 @@ public class WarpManager {
                         Component.text("Reload Warps")
                                 .color(NamedTextColor.RED));
 
+        plugin.getGuiManager()
+                        .setItem(warpMenu, 29, new ItemStack(Material.FEATHER),
+                                Component.text("Clear Warps")
+                                        .color(NamedTextColor.YELLOW));
+
         player.openInventory(warpMenu);
     }
 
@@ -168,6 +190,15 @@ public class WarpManager {
     }
 
     private boolean isExist(@NonNull Warp warp) {
-        return plugin.getWarpsFile().getConfig().isConfigurationSection("special-warps." + warp.getWarpName());
+        return warps.contains(warp);
+    }
+
+    public Warp getWarpName(String warpName) {
+        for (Warp warp : warps) {
+            if (warp.getWarpName().equalsIgnoreCase(warpName))
+                return warp;
+        }
+
+        return null;
     }
 }

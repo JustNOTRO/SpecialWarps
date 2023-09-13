@@ -37,6 +37,7 @@ public class WarpUI implements Listener {
 
         slotName = LegacyComponentSerializer.legacyAmpersand().serialize(slot.hasItemMeta() ? slot.getItemMeta().displayName() : slot.displayName());
         ConfigurationSection section = plugin.getWarpsFile().getConfig().getConfigurationSection("special-warps." + slotName);
+        event.setCancelled(true);
 
         switch (event.getAction()) {
             case PICKUP_ALL -> {
@@ -72,9 +73,8 @@ public class WarpUI implements Listener {
         if (!event.getAction().equals(InventoryAction.PICKUP_ALL)) return;
         if (slot == null) return;
 
-
-        ConfigurationSection section = plugin.getWarpsFile().getConfig().getConfigurationSection("special-warps." + slotName);
-        Warp warp = new Warp(player.getName(), slotName, section.getLocation("location"));
+        event.setCancelled(true);
+        final Warp warp = plugin.getWarpManager().getWarpName(slotName);
 
         switch (slot.getType()) {
             case RED_CONCRETE -> {
@@ -116,6 +116,7 @@ public class WarpUI implements Listener {
         Component slotName = slot.hasItemMeta() ? slot.getItemMeta().displayName() : slot.displayName();
         if (!slotName.equals(Component.text("Create Warp").color(NamedTextColor.YELLOW))) return;
 
+        event.setCancelled(true);
         ItemStack stack = new ItemStack(Material.NAME_TAG);
         ItemMeta meta = stack.getItemMeta();
         meta.displayName(slotName);
@@ -129,5 +130,61 @@ public class WarpUI implements Listener {
         plugin.getWarpManager().addPlayer(player.getUniqueId());
         player.closeInventory();
         player.showTitle(Title.title(Component.text("Type warp name in chat"), Component.text("")));
+    }
+
+    @EventHandler
+    public void onReloadWarps(InventoryClickEvent event) {
+        Player player = (Player) event.getWhoClicked();
+        ItemStack slot = event.getInventory().getItem(event.getSlot());
+        TextComponent title =
+                Component.text("Warps")
+                        .color(NamedTextColor.RED);
+
+        if (!event.getView().title().equals(title)) return;
+        if (slot == null || slot.getType() != Material.TRIPWIRE_HOOK) return;
+
+        Component slotName = slot.hasItemMeta() ? slot.getItemMeta().displayName() : slot.displayName();
+        if (!slotName.equals(Component.text("Reload Warps").color(NamedTextColor.RED))) return;
+
+        event.setCancelled(true);
+        plugin.getWarpsFile().reloadConfig();
+        ChatUtils.sendPrefixedMessage(player, "&aSuccessfully reloaded all &bwarps&7.");
+    }
+
+    @EventHandler
+    public void clearAllWarps(InventoryClickEvent event) {
+        Player player = (Player) event.getWhoClicked();
+        ItemStack slot = event.getInventory().getItem(event.getSlot());
+        TextComponent title =
+                Component.text("Warps")
+                        .color(NamedTextColor.RED);
+
+        if (!event.getView().title().equals(title)) return;
+        if (slot == null || slot.getType() != Material.FEATHER) return;
+
+        Component slotName = slot.hasItemMeta() ? slot.getItemMeta().displayName() : slot.displayName();
+        if (!slotName.equals(Component.text("Clear Warps").color(NamedTextColor.YELLOW))) return;
+
+        event.setCancelled(true);
+        plugin.getWarpManager().clearWarps();
+        player.closeInventory();
+        ChatUtils.sendPrefixedMessage(player, "&aSuccessfully cleared all &bwarps&7.");
+    }
+
+    @EventHandler
+    public void onInventoryClick(InventoryClickEvent event) {
+        ItemStack slot = event.getInventory().getItem(event.getSlot());
+        if (slot == null || slot.getType() != Material.SPONGE) return;
+
+        Component itemName = slot.hasItemMeta() ? slot.getItemMeta().displayName() : slot.displayName();
+        if (!itemName.equals(
+                Component.text("Warps: ")
+                        .color(NamedTextColor.YELLOW)
+                        .append(
+                                Component.text(plugin.getWarpManager()
+                                        .getWarpsCount())
+                                        .color(NamedTextColor.GRAY)))) return;
+
+        event.setCancelled(true);
     }
 }
